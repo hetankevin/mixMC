@@ -13,14 +13,6 @@ import dtlearn as dt
 import time
 
 
-"""
-plt.rcParams.update({
-    "text.usetex": True,
-#   "font.family": "Helvetica"
-    'font.size': 13,
-})
-"""
-
 
 label_tau = "discretization rate $\\tau$"
 label_L = "$L$"
@@ -513,17 +505,6 @@ def proportional_rates_plot(setup, part=1, savefig=None):
 
         plt.ylabel("clustering error")
 
-        # plt.legend(loc="upper right")
-
-        """
-        from matplotlib.lines import Line2D
-        first_legend = plt.legend([Line2D([0], [0], color='black', label='Line'),
-                                    Line2D([0], [0], color='black', label='Line', dashes=(4,2))],
-                                    ["recovery error", "cluster error"],
-                                    loc="upper right",
-                                    )
-        plt.add_artist(first_legend)
-        """
 
         plt.xlabel("factor $f$")
 
@@ -595,17 +576,6 @@ def plot_single_chain_tau(setup, savefig=None):
             plt.plot(mean.index, mean.recovery_error_mle, label=f"{label_t_time}={t_time}", **next_config())
             plt.fill_between(mean.index, mean.recovery_error_mle - std.recovery_error_mle, mean.recovery_error_mle + std.recovery_error_mle, alpha=0.2)
 
-        """
-        x = df.groupby("tau")
-        mean = x.mean()
-        std = x.std()
-
-        plt.plot(mean.index, mean.recovery_error_mle, label="MLE (McGibbons)")
-        plt.fill_between(mean.index, mean.recovery_error_mle - std.recovery_error_mle, mean.recovery_error_mle + std.recovery_error_mle, alpha=0.2)
-
-        plt.plot(mean.index, mean.recovery_error_inf, label="Infinitesimal")
-        plt.fill_between(mean.index, mean.recovery_error_inf - std.recovery_error_inf, mean.recovery_error_inf + std.recovery_error_inf, alpha=0.2)
-        """
 
         plt.legend()
         plt.axvline(x=1, color="black")
@@ -1054,8 +1024,6 @@ def nba_predict_outcome(trail_ct_prefix, mixture):
     ll /= np.sum(ll)
     probs_per_chain = ll * (np.eye(mixture.n)[player] @ mixture.Ts(10000))[:, [0,1]]
     probs = np.sum(probs_per_chain, axis=0)
-    if sum(probs) < 0.9:
-        print("probs do not sum up to 1")
     # probs /= np.sum(probs)
     return probs
 
@@ -1188,14 +1156,6 @@ def nba_print_mixture(mixture, state_dict, trails_ct=None):
             print(" " * 12, S)
         with np.printoptions(precision=9, suppress=True, linewidth=np.inf):
             print("\n".join([f"{name}{line}" for name, line in zip(names, str(K).split('\n'))]))
-            """
-            x = "Mixture(    # starting probabilities:\n "
-            x += str(S).replace('\n', '\n ')
-            x += "\n,           # rate matrices:\n "
-            x += str(self.Ks).replace('\n', '\n ')
-            x += "\n)"
-            return x
-            """
 
     mixture_stationary = mixture.Ts(10000)
     for l in range(mixture.L):
@@ -1218,7 +1178,6 @@ def nba_print_mixture(mixture, state_dict, trails_ct=None):
                     color = ("," + {"score": "green", "miss": "red"}[p2]) if p2 in baskets else ""
                     print("    \\draw[pass,opacity=" + str(x) + ",line width=" + str(x * 10) + "pt" + color + "] (" + p1 + ") to (" + p2 + ");")
 
-    import pdb; pdb.set_trace()
 
 
 
@@ -1230,7 +1189,7 @@ def real_world_nba_nn(team, season, tau=0.1, max_trail_time=20, min_trail_time=1
     return nba_learn.text_classification_learn(data)
 
 
-# @memoize
+@memoize
 def real_world_nba(L, team, season, tau=0.1, max_trail_time=20, min_trail_time=10, test_size=0.25, seed=0):
     import NBA.learn as nba_learn
 
@@ -1371,7 +1330,7 @@ def plot_nba_live(setup, savefig=None):
     savefig()
 
 
-@memoize
+# @memoize
 def real_world_nba_test(L, team, season, verbose=True):
     import NBA.extract as nba
 
@@ -1408,35 +1367,6 @@ def real_world_nba_test(L, team, season, verbose=True):
         nba_print_mixture(mixture_ct, state_dict)
         print("prediction_error", prediction_error)
 
-    """
-    l, i = divmod(np.argmax(mixture_ct.S), mixture_ct.n) 
-    maxex_trail = []
-    while state_dict[i] not in ["miss", "score", "idle"]:
-        print(state_dict[i])
-        maxex_trail.append(i)
-        i = np.argmax(mixture_ct.Ks[l, i, :])
-    print(maxex_trail)
-    maxex_names = [state_dict[i][0] for i in maxex_trail]
-    print([state_dict[i] for i in maxex_trail])
-    """
-
-    """
-    n_lines = 0
-    for _, row in df.iterrows():
-        trail = row.trail
-        names = [player for _, _, player, _ in trail]
-        if maxex_names[0] in names:
-
-            i = names.index(maxex_names[0])
-            if i + len(maxex_names) <= len(names):
-                if all([a == b for a, b in zip(maxex_names, names[i:])]):
-                    print(names)
-                    n_lines += 1
-        if n_lines > 10:
-            break
-    """
-
-    # ct.likehood(em_mixture_ct, trails)
 
     return {
         "em_explainability": explainability,
@@ -1462,39 +1392,47 @@ def plot_real_world(setup, savefig=None):
     mean = x.mean()
     std = x.std()
     em_config = next_config()
-    plt.plot(mean.index, mean, label=label_em, **em_config)
+    line_solid, = plt.plot(mean.index, mean, color="black", label="test")
+    line1, = plt.plot(mean.index, mean, label=label_em, **em_config)
     plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
+    line_dashed, = plt.plot(mean.index, grp.em_train_accuracy.mean(), color="black", linestyle="dashed", label="train")
     plt.plot(mean.index, grp.em_train_accuracy.mean(), **em_config, linestyle="dashed")
 
     x = grp.kausik_test_accuracy
     mean = x.mean()
     std = x.std()
     kausik_config = next_config()
-    plt.plot(mean.index, mean, label=label_kausik, **kausik_config)
+    line2, = plt.plot(mean.index, mean, label=label_kausik, **kausik_config)
     plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
     plt.plot(mean.index, grp.kausik_train_accuracy.mean(), **kausik_config, linestyle="dashed")
+
+    next_config()
 
     x = grp.continuous_em_test_accuracy
     mean = x.mean()
     std = x.std()
     continuous_em_config = next_config()
-    plt.plot(mean.index, mean, label=label_continuous_em, **continuous_em_config)
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
+    line3, = plt.plot(mean.index, mean, label=label_continuous_em, **continuous_em_config)
+    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2, color=continuous_em_config["color"])
     plt.plot(mean.index, grp.continuous_em_train_accuracy.mean(), **continuous_em_config, linestyle="dashed")
 
     x = grp.text_classification_test_accuracy
     mean = x.mean()
     std = x.std()
     text_classification_config = next_config()
-    plt.plot(mean.index, mean, label="Neural Network", **text_classification_config)
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
+    line4, = plt.plot(mean.index, mean, label="Neural Network", **text_classification_config)
+    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2, color=text_classification_config["color"])
     plt.plot(mean.index, grp.text_classification_train_accuracy.mean(), **text_classification_config, linestyle="dashed")
 
-    plt.legend()
-    plt.title(gen_title(setup))
+    legend1 = plt.legend(handles=[line1, line2, line3, line4], loc="upper left")
+    plt.gca().add_artist(legend1)
+    plt.legend(handles=[line_solid, line_dashed], loc="lower right")
+
+    plt.title(gen_title(setup, {"n": 7}))
     plt.xlabel(label_L)
-    plt.ylabel("Accuracy")
+    plt.ylabel("accuracy")
     savefig()
+
 
 
 
@@ -1526,33 +1464,6 @@ def plot_end2end_n_samples_with_baseline(setup, savefig=None):
     df = df.join(df.astype("object").apply(lambda row: test_methods_with_baseline(row.n, row.L, row.tau, row.t_len, row.n_samples, seed=row.seed),
                   axis=1, result_type='expand'))
 
-    """
-    grp = df.groupby("n_samples")
-
-    x = grp.em_recovery_error
-    mean = x.mean()
-    std = x.std()
-    plt.plot(mean.index, mean, label=label_em, **next_config())
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
-
-    x = grp.kausik_recovery_error
-    mean = x.mean()
-    std = x.std()
-    plt.plot(mean.index, mean, label=label_kausik, **next_config())
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
-
-    x = grp.svd_recovery_error
-    mean = x.mean()
-    std = x.std()
-    plt.plot(mean.index, mean, label=label_kausik, **next_config())
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
-
-    x = grp.continuous_em_recovery_error
-    mean = x.mean()
-    std = x.std()
-    plt.plot(mean.index, mean, label=label_kausik, **next_config())
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
-    """
 
     x = df.groupby("n_samples")
     mean = x.mean()
@@ -1806,13 +1717,6 @@ def plot_lastfm(setup, savefig=None):
     plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
     plt.plot(mean.index, grp["em_continuous_clustering_error_train"].mean(), **config, linestyle="dashed")
 
-    """
-    x = grp["svd_clustering_error"]
-    mean = x.mean()
-    std = x.std()
-    plt.plot(mean.index, mean, label=label_svd, **next_config())
-    plt.fill_between(mean.index, mean - std, mean + std, alpha=0.2)
-    """
 
     legend1 = plt.legend(handles=[line1, line2, line3], loc="lower right")
     plt.gca().add_artist(legend1)

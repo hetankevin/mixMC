@@ -9,7 +9,7 @@ from matplotlib.ticker import MaxNLocator
 
 
 ncores = int(os.getenv('NSLOTS', default=1))
-print(f"[ USING {ncores} CORES ]")
+# print(f"[ USING {ncores} CORES ]")
 
 
 def memoize(func, verbose=True):
@@ -52,19 +52,6 @@ def papply(df, f, catch_err=True):
         res = df.astype("object").apply(f, axis=1, result_type='expand')
     return df.join(res, lsuffix='_original')
 
-"""
-def papply(df, f, parallel=True, catch_err=True):
-    if catch_err:
-        f = catch_errors(f)
-    if parallel:
-        df = df.astype("object")
-        x = dd.from_pandas(df, npartitions=ncores)
-        f0 = f(df.iloc[0])
-        return df.join(x.apply(f, axis=1, result_type='expand', meta=f0).compute(scheduler='processes'))
-    else:
-        return df.join(df.astype("object").apply(f, axis=1, result_type='expand'))
-"""
-
 def catch_errors(f, n_times=5):
     def g(*args, **kwargs):
         for _ in range(n_times - 1):
@@ -77,8 +64,6 @@ def catch_errors(f, n_times=5):
 
 plt.rcParams.update({
     "text.usetex": True,
-#   "font.family": "sans-serif",
-#   "font.sans-serif": "Helvetica",
     "font.size": 17,
     "axes.titlepad": 8,
 })
@@ -144,9 +129,7 @@ def genpath(func):
             ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
         def savefig():
-            print(f">>> {subfig_n} > {subfig_i}")
             if subfig_n > subfig_i: return
-            print("showing...")
             if subfig_n > 0 and subfig_share:
                 ax = plt.gca()
                 plt.ylabel("")
@@ -158,12 +141,11 @@ def genpath(func):
             shutil.copyfile(path1, path2)
             if is_notebook():
                 plt.show()
-                print(f"saved as '{path2}'")
+                # print(f"saved as '{path2}'")
 
         x = func(*args, **kwargs, savefig=savefig)
 
         if subfig_n <= subfig_i:
-            print("closing...")
             plt.close()
         elif subfig_share and subfig_legend != subfig_i:
             ax.get_legend().remove()
